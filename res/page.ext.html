@@ -1,0 +1,17 @@
+<html>
+<head>
+  <title>asciicast2gif</title>
+  <link rel="stylesheet" type="text/css" href="asciinema-player.css" />
+  <script src="asciinema-player.js"></script>
+  <script src="jquery.js"></script>
+  <style>
+    div#player-container{position: absolute; left: 0; top: 0;}
+  </style>
+</head>
+<body>
+  <div id="player-container"></div>
+  <script>
+    asciinema_player.core.CreatePlayer("player-container", "demo.json");
+  </script>
+</body>
+</html>
