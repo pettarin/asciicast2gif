@@ -2,8 +2,8 @@
 
 **asciicast2gif** converts [asciicast](https://github.com/asciinema/asciinema/blob/master/doc/asciicast-v1.md) files to animated GIF files 
 
-* Version: 0.0.1
-* Date: 2016-02-06
+* Version: 0.0.2
+* Date: 2016-02-07
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
@@ -26,18 +26,32 @@ NAME
     asciicast2gif - convert an asciicast (asciinema JSON file) to an animated GIF file
 
 SYNOPSIS
-    ./asciicast2gif ASCIICAST.json [GIF_FILE_NAME] [FRAME_RATE] [DISCARD_FRAMES] [py2|py3|ruby|none]
+    ./asciicast2gif ASCIICAST.json [GIF_FILE_NAME] [OPTIONS]
 
-REQUIREMENTS
-    1. phantomjs; 2. convert (imagemagick); 3. gifsicle; 4. python or ruby or a local HTTP server running on port 8000    
+OPTIONS
+    --fps=NUM : generate gif with NUM frames per second (default: 10)
+    --head=NUM : discard first NUM screenshots (default: 0)
+    --keep : do not delete the temporary directory (default: delete)
+    --nogif : do not generate GIF file (default: generate)
+    --port=NUM : use port NUM for the local HTTP server (default: 8000)
+    --size=[small|medium|big] : set player size (default: small)
+    --speed=VAL : set player speed to VAL (default: 1)
+    --tail=NUM : discard last NUM screenshots (default: 0)
+    --theme=[asciinema|monokai|tango|solarized-dark|solarized-light] : use player theme (default: asciinema)
+    --server=[py2|py3|py3.5|ruby|none] : use the given local HTTP server (default: py2)
 
 EXAMPLES
-    $ ./asciicast2gif your.json                   => generate your.json.gif at 10 fps
-    $ ./asciicast2gif your.json foo.gif           => generate foo.gif at 10 fps
-    $ ./asciicast2gif your.json foo.gif 20        => generate foo.gif at 20 fps
-    $ ./asciicast2gif your.json foo.gif 10 5      => generate foo.gif at 10 fps discarding the last 5 screenshots
-    $ ./asciicast2gif your.json foo.gif 10 0 ruby => use Ruby instead of Python 2 to start a local HTTP server
-    $ ./asciicast2gif your.json foo.gif 10 0 none => a local HTTP server is already running on port 8000
+    $ ./asciicast2gif your.json               => generate your.json.gif
+    $ ./asciicast2gif your.json foo.gif       => generate foo.gif
+    $ ./asciicast2gif your.json --fps=20      => generate your.json.gif at 20 frames/s
+    $ ./asciicast2gif your.json --speed=1.5   => play asciicast at 1.5x speed
+    $ ./asciicast2gif your.json --head=3      => discard first 3 screenshots
+    $ ./asciicast2gif your.json --tail=5      => discard last 5 screenshots
+    $ ./asciicast2gif your.json --server=ruby => use Ruby to start local HTTP server
+    $ ./asciicast2gif your.json --server=none => local HTTP server is already running on port 8000
+    $ ./asciicast2gif your.json --size=big    => set the player size to big
+    $ ./asciicast2gif your.json --port=5000   => use local HTTP server port 5000
+    $ ./asciicast2gif your.json --theme=tango => set the player theme to tango
 ```
 
 ## Requirements
@@ -77,21 +91,20 @@ Please contribute if you figure it out.
 
 **asciicast2gif** is released under the terms of the [MIT License](LICENSE).
 
-The ``page.template.html`` file in this repository contains inlined versions of:
+The ``page.template.html`` file in this repository contains an inlined version of
+[``asciinema-player`` v2.0.0](https://github.com/asciinema/asciinema-player) (GPLv3 License).
 
-* [``asciinema-player`` v2.0.0](https://github.com/asciinema/asciinema-player) (GPLv3 License)
-* [``jQuery`` v2.2.0](https://jquery.com/) (MIT License)
+## Changelog
+
+* 2016-02-07 0.0.2 Removed dependency on jQuery; added optional arguments
+* 2016-02-06 0.0.1 Initial release
 
 ## Limitations and Missing Features 
 
 * The input asciicast JSON file must be in the CWD
 * Tested only on Debian, but it should be OK on other Linux distributions and OS X too
 * Removing dependency from a running local HTTP server
-* Removing dependency from jQuery
 * Removing bashisms
-* Better parsing of command line options
-* Passing the HTTP server port as a command line option
-* Passing options to ``asciinema-player``, e.g. theme selection
 * There is no check that ``phantomjs``, ``convert``, and ``gifsicle`` are installed
 * ``convert`` and ``gifsicle`` are quite slow
 

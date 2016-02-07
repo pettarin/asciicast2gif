@@ -8,7 +8,7 @@
 #  \__,_|___/\___|_|_|\___\__,_|___/\__|_____\__, |_|_|  
 #                                            |___/       
 #
-# Version 0.0.1
+# Version 0.0.2
 #
 # The MIT License (MIT)
 #
@@ -36,10 +36,7 @@
 ### constants ###
 
 # asciicast2gif version
-VERSION="0.0.1"
-
-# run simple HTTP server on this port
-PORT=8000
+VERSION="0.0.2"
 
 # extra parameters to gifsicle
 GIFSICLE_PARAMS="--colors=256 --optimize=3"
@@ -55,18 +52,32 @@ then
     echo "    asciicast2gif - convert an asciicast (asciinema JSON file) to an animated GIF file"
     echo ""
     echo "SYNOPSIS"
-    echo "    ./asciicast2gif ASCIICAST.json [GIF_FILE_NAME] [FRAME_RATE] [DISCARD_FRAMES] [py2|py3|ruby|none]"
+    echo "    ./asciicast2gif ASCIICAST.json [GIF_FILE_NAME] [OPTIONS]"
     echo ""
-    echo "REQUIREMENTS"
-    echo "    1. phantomjs; 2. convert (imagemagick); 3. gifsicle; 4. python or ruby or a local HTTP server running on port 8000"
+    echo "OPTIONS"
+    echo "    --fps=NUM : generate gif with NUM frames per second (default: 10)"
+    echo "    --head=NUM : discard first NUM screenshots (default: 0)"
+    echo "    --keep : do not delete the temporary directory (default: delete)"
+    echo "    --nogif : do not generate GIF file (default: generate)"
+    echo "    --port=NUM : use port NUM for the local HTTP server (default: 8000)"
+    echo "    --size=[small|medium|big] : set player size (default: small)"
+    echo "    --speed=VAL : set player speed to VAL (default: 1)"
+    echo "    --tail=NUM : discard last NUM screenshots (default: 0)"
+    echo "    --theme=[asciinema|monokai|tango|solarized-dark|solarized-light] : use player theme (default: asciinema)"
+    echo "    --server=[py2|py3|py3.5|ruby|none] : use the given local HTTP server (default: py2)"
     echo ""
     echo "EXAMPLES"
-    echo "    $ ./asciicast2gif your.json                   => generate your.json.gif at 10 fps"
-    echo "    $ ./asciicast2gif your.json foo.gif           => generate foo.gif at 10 fps"
-    echo "    $ ./asciicast2gif your.json foo.gif 20        => generate foo.gif at 20 fps"
-    echo "    $ ./asciicast2gif your.json foo.gif 10 5      => generate foo.gif at 10 fps discarding last 5 screenshots"
-    echo "    $ ./asciicast2gif your.json foo.gif 10 0 ruby => use Ruby instead of Python 2 to start a local HTTP server"
-    echo "    $ ./asciicast2gif your.json foo.gif 10 0 none => a local HTTP server is already running on port 8000"
+    echo "    $ ./asciicast2gif your.json               => generate your.json.gif"
+    echo "    $ ./asciicast2gif your.json foo.gif       => generate foo.gif"
+    echo "    $ ./asciicast2gif your.json --fps=20      => generate your.json.gif at 20 frames/s"
+    echo "    $ ./asciicast2gif your.json --speed=1.5   => play asciicast at 1.5x speed"
+    echo "    $ ./asciicast2gif your.json --head=3      => discard first 3 screenshots"
+    echo "    $ ./asciicast2gif your.json --tail=5      => discard last 5 screenshots"
+    echo "    $ ./asciicast2gif your.json --server=ruby => use Ruby to start local HTTP server"
+    echo "    $ ./asciicast2gif your.json --server=none => local HTTP server is already running on port 8000"
+    echo "    $ ./asciicast2gif your.json --size=big    => set the player size to big"
+    echo "    $ ./asciicast2gif your.json --port=5000   => use local HTTP server port 5000"
+    echo "    $ ./asciicast2gif your.json --theme=tango => set the player theme to tango"
     echo ""
     exit 2
 fi
@@ -76,30 +87,85 @@ ASCIICAST_FILE="$1"
 GIF_FILE_NAME="$ASCIICAST_FILE"".gif"
 if [ "$#" -ge 2 ]
 then
-    GIF_FILE_NAME="$2"
+    if [[ "$2" != --* ]]
+    then
+        GIF_FILE_NAME="$2"
+    fi
 fi
 GIF_FILE=$(cd "$(dirname "$GIF_FILE_NAME")"; pwd)/$(basename "$GIF_FILE_NAME")
 
-FRAME_RATE=10
-if [ "$#" -ge 3 ]
-then
-    FRAME_RATE="$3"
-fi
+# set option default values
+DISCARD_FIRST=0     # discard first NUM screenshots
+DISCARD_LAST=0      # discard last NUM screenshots
+FONT_SIZE="small"   # player font size
+FRAME_RATE=10       # frame rate (screenshots/s)
+GENERATE_GIF="1"    # generate gif
+KEEP="0"            # keep (1) or delete (0) temporary directory
+PORT=8000           # run simple HTTP server on this port
+SERVER="py2"        # server name
+SPEED="1"           # player speed
+THEME="asciinema"   # player theme
+
+# set option values if specified
+for ARG in "$@"
+do
+    case $ARG in
+        --head=*)
+        DISCARD_FIRST="${ARG#*=}"
+        shift
+        ;;
+        --tail=*)
+        DISCARD_LAST="${ARG#*=}"
+        shift
+        ;;
+        --fps=*)
+        FRAME_RATE="${ARG#*=}"
+        shift
+        ;;
+        --keep)
+        KEEP="1"
+        shift
+        ;;
+        --nogif)
+        GENERATE_GIF="0"
+        shift
+        ;;
+        --port=*)
+        PORT="${ARG#*=}"
+        shift
+        ;;
+        --server=*)
+        SERVER="${ARG#*=}"
+        shift
+        ;;
+        --size=*)
+        FONT_SIZE="${ARG#*=}"
+        shift
+        ;;
+        --speed=*)
+        SPEED="${ARG#*=}"
+        shift
+        ;;
+        --theme=*)
+        THEME="${ARG#*=}"
+        shift
+        ;;
+    esac
+done
+
+#echo "IF $ASCIICAST_FILE"
+#echo "OF $GIF_FILE_NAME"
+#echo "GG $GENERATE_GIF"
+#echo "KE $KEEP"
+#echo "DF $DISCARD_FIRST"
+#echo "DL $DISCARD_LAST"
+#echo "FR $FRAME_RATE"
+#echo "PO $PORT"
+#echo "SE $SERVER"
+#echo "SP $SPEED"
+#echo "TH $THEME"
+
 GIFSICLE_DELAY=`echo "100 / $FRAME_RATE" | bc`
-
-DISCARD_LAST=0
-if [ "$#" -ge 4 ]
-then
-    DISCARD_LAST="$4"
-fi
-
-SERVER="py2"
-if [ "$#" -ge 5 ]
-then
-    SERVER="$5"
-fi
-
-
 
 ### run ###
 
@@ -121,6 +187,10 @@ then
     then
         echo "[INFO] Starting Python 3 http.server on port $PORT"
         python -m http.server "$PORT" > /dev/null 2> /dev/null &
+    elif [ "$SERVER" == "py3.5" ]
+    then
+        echo "[INFO] Starting Python 3.5 http.server on port $PORT"
+        python3.5 -m http.server "$PORT" > /dev/null 2> /dev/null &
     elif [ "$SERVER" == "ruby" ]
     then
         echo "[INFO] Starting Ruby httpd on port $PORT"
@@ -145,16 +215,40 @@ echo "[INFO] Temporary directory is $TMP_DIR"
 # create page.patched.html
 PAGE_TEMPLATE="page.template.html"
 PAGE_PATCHED="page.patched.html"
-cat "$PAGE_TEMPLATE" | sed -e "s/demo.json/$ASCIICAST_FILE/" > "$PAGE_PATCHED"
+PLACEHOLDER="\"demo.json\""
+REPLACEMENT="\"$ASCIICAST_FILE\", { \"fontSize\": \"$FONT_SIZE\", \"speed\": $SPEED, \"theme\": \"$THEME\" }"
+cat "$PAGE_TEMPLATE" | sed -e "s/$PLACEHOLDER/$REPLACEMENT/" > "$PAGE_PATCHED"
 
 # read width and height of the asciicast file
 # TODO parse JSON properly
-WIDTH=`grep "width" "$ASCIICAST_FILE" | head -n1 | cut -d ":" -f 2 | tr -d " ,"`
-HEIGHT=`grep "height" "$ASCIICAST_FILE" | head -n1 | cut -d ":" -f 2 | tr -d " ,"`
+WIDTH=`cat "$ASCIICAST_FILE" | tr "," "\n" | grep "width"  | head -n1 | cut -d ":" -f 2 | tr -d " ,"`
+HEIGHT=`cat "$ASCIICAST_FILE" | tr "," "\n" | grep "height" | head -n1 | cut -d ":" -f 2 | tr -d " ,"`
+#
+# NOTE this depends on asciinema-player CSS/JS
+# small  =>  7x 16x
+# medium => 11x 24x
+# big    => 14x 32x
+#
+case $FONT_SIZE in
+    small)
+    WIDTH_MULT=7
+    HEIGHT_MULT=16
+    ;;
+    medium)
+    WIDTH_MULT=11
+    HEIGHT_MULT=24
+    ;;
+    big)
+    WIDTH_MULT=14
+    HEIGHT_MULT=32
+    ;;
+esac
+WIDTH_PX=`echo "$WIDTH * $WIDTH_MULT" | bc`
+HEIGHT_PX=`echo "$HEIGHT * $HEIGHT_MULT" | bc`
 
 # run phantomjs to take screenshots
 # while asciinema-player runs
-phantomjs screenshot.js "http://localhost:$PORT/$PAGE_PATCHED" "$WIDTH" "$HEIGHT" "$TMP_DIR" "$FRAME_RATE"
+phantomjs screenshot.js "http://localhost:$PORT/$PAGE_PATCHED" "$WIDTH_PX" "$HEIGHT_PX" "$TMP_DIR" "$FRAME_RATE"
 if [ "$?" != 0 ]
 then
     echo "[ERRO] Removing $TMP_DIR"
@@ -202,14 +296,37 @@ do
     fi
 done
 
+# remove the first DISCARD_FIRST snapshots
+FIRST_FILES=`ls | head -n $DISCARD_FIRST`
+for CURRENT_FILE in $FIRST_FILES
+do
+    #echo "[INFO] Removing file $CURRENT_FILE"
+    rm "$CURRENT_FILE"
+done
+
 # generate GIF
-convert -loop 0 *.png gif:- | gifsicle --delay $GIFSICLE_DELAY $GIFSICLE_PARAMS > "$GIF_FILE" 2> /dev/null
+if [ "$GENERATE_GIF" == "1" ]
+then
+    convert -loop 0 *.png gif:- | gifsicle --delay $GIFSICLE_DELAY $GIFSICLE_PARAMS > "$GIF_FILE" 2> /dev/null
+else
+    echo "[INFO] Option '--nogif' specified: not generating GIF file"
+fi
+
 cd $START_DIR
 
-#echo "[INFO] Removing $TMP_DIR"
-rm -rf $TMP_DIR
+# delete temporary directory
+if [ "$KEEP" == "0" ]
+then
+    #echo "[INFO] Removing $TMP_DIR"
+    rm -rf $TMP_DIR
+else
+    echo "[INFO] Option '--keep' specified: not removing $TMP_DIR"
+fi
 
-echo "[INFO] Created $GIF_FILE"
+if [ "$GENERATE_GIF" == "1" ]
+then
+    echo "[INFO] Created $GIF_FILE"
+fi
 exit 0
 
 

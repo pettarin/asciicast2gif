@@ -7,7 +7,7 @@
  \__,_|___/\___|_|_|\___\__,_|___/\__|_____\__, |_|_|  
                                            |___/       
 
-Version 0.0.1
+Version 0.0.2
 
 The MIT License (MIT)
 
@@ -38,10 +38,8 @@ var webpage = require("webpage");
 
 var argv;                   // the command line arguments
 var ac_url;                 // the URL of the asciicast
-var ac_width;               // the width of the asciicast, in characters
-var ac_width_px;            // the width of the asciicast, in pixels
-var ac_height;              // the eight of the asciicast, in characters
-var ac_height_px;           // the eight of the asciicast, in pixels
+var ac_width_px;               // the width of the asciicast, in pixels
+var ac_height_px;              // the eight of the asciicast, in pixels
 var tmp_dir;                // the temporary directory where screenshots are saved
 var frame_rate;             // frame rate of the capture
 var screenshot_interval;    // interval between screenshots, in seconds
@@ -74,22 +72,16 @@ if (argv.length < 6) {
     phantom.exit(0);
 } else {
     ac_url = argv[1];
-    ac_width = argv[2];
-    ac_height = argv[3];
+    ac_width_px = argv[2];
+    ac_height_px = argv[3];
     tmp_dir = argv[4];
     frame_rate = argv[5];
-
     screenshot_interval = 1000.0 / frame_rate;
-    // NOTE this depends on asciinema-player CSS/JS
-    ac_width_px = ac_width * 7;
-    // NOTE this depends on asciinema-player CSS/JS
-    ac_height_px = ac_height * 6;
 }
 
 // create page
 page = create_page();
 
-// TODO let the user control this and theme as well
 // set viewport size
 page.viewportSize = {
     width: ac_width_px,
@@ -154,18 +146,16 @@ page.open(ac_url, function(stat) {
     page.evaluate(function() {
         // TODO let the user control this
         // hide the control bar
-        // TODO remove dependency on jQuery
         // NOTE this depends on asciinema-player CSS/JS
-        $(".control-bar").hide();
+        document.getElementsByClassName("control-bar")[0].style.display = "none";
 
         // start capture
         callPhantom(true);
 
         // check if the player has finished once per second
         setInterval(function() {
-            // TODO remove dependency on jQuery
             // NOTE this depends on asciinema-player CSS/JS
-            var width = $(".gutter")[0].children[0].style.width;
+            var width = document.getElementsByClassName("gutter")[0].children[0].style.width;
             if (parseInt(width) >= 100) {
                 // completed
                 callPhantom(false);
@@ -177,11 +167,10 @@ page.open(ac_url, function(stat) {
         }, 1000);
 
         // send click to start playing the asciicast
-        // TODO remove dependency on jQuery
         // NOTE this depends on asciinema-player CSS/JS
         var ev = document.createEvent("Events");
         ev.initEvent("click", true, false);
-        ($(".start-prompt")[0]).dispatchEvent(ev);
+        document.getElementsByClassName("start-prompt")[0].dispatchEvent(ev);
 
     }); // end of page.evaluate
 
