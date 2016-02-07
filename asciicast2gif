@@ -58,7 +58,7 @@ then
     echo "    ./asciicast2gif ASCIICAST.json [GIF_FILE_NAME] [FRAME_RATE] [DISCARD_FRAMES] [py2|py3|ruby|none]"
     echo ""
     echo "REQUIREMENTS"
-    echo "    1. phantomjs; 2. gifsicle; 3. python or ruby or a local HTTP server running on port 8000"
+    echo "    1. phantomjs; 2. convert (imagemagick); 3. gifsicle; 4. python or ruby or a local HTTP server running on port 8000"
     echo ""
     echo "EXAMPLES"
     echo "    $ ./asciicast2gif your.json                   => generate your.json.gif at 10 fps"

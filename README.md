@@ -29,7 +29,7 @@ SYNOPSIS
     ./asciicast2gif ASCIICAST.json [GIF_FILE_NAME] [FRAME_RATE] [DISCARD_FRAMES] [py2|py3|ruby|none]
 
 REQUIREMENTS
-    1. phantomjs; 2. gifsicle; 3. python or ruby or a local HTTP server running on port 8000
+    1. phantomjs; 2. convert (imagemagick); 3. gifsicle; 4. python or ruby or a local HTTP server running on port 8000    
 
 EXAMPLES
     $ ./asciicast2gif your.json                   => generate your.json.gif at 10 fps
@@ -44,6 +44,7 @@ EXAMPLES
 
 1. [``bash``](https://www.gnu.org/software/bash/) shell
 2. [``phantomjs``](http://phantomjs.org/)
+3. ``convert``, i.e. [``imagemagick``](http://www.imagemagick.org)
 4. [``gifsicle``](https://github.com/kohler/gifsicle)
 5. [``python``](https://www.python.org/) or [``ruby``](https://www.ruby-lang.org/)
    or a local HTTP server of your choice running on port ``8000``
