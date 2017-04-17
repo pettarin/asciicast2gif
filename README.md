@@ -1,6 +1,6 @@
-# asciicast2gif 
+# asciicast2gif
 
-**asciicast2gif** converts [asciicast](https://github.com/asciinema/asciinema/blob/master/doc/asciicast-v1.md) files to animated GIF files 
+**asciicast2gif** converts [asciicast](https://github.com/asciinema/asciinema/blob/master/doc/asciicast-v1.md) files to animated GIF files
 
 * Version: 0.0.2
 * Date: 2016-02-07
@@ -20,7 +20,7 @@ depending on the size/duration of the asciicast.)
 Run without arguments to get the following help message:
 
 ```bash
-$ ./asciicast2gif 
+$ ./asciicast2gif
 
 NAME
     asciicast2gif - convert an asciicast (asciinema JSON file) to an animated GIF file
@@ -57,7 +57,7 @@ EXAMPLES
 ## Requirements
 
 1. [``bash``](https://www.gnu.org/software/bash/) shell
-2. [``phantomjs``](http://phantomjs.org/)
+2. [``phantomjs``](http://phantomjs.org/) (>=2.0.0)
 3. ``convert``, i.e. [``imagemagick``](http://www.imagemagick.org)
 4. [``gifsicle``](https://github.com/kohler/gifsicle)
 5. [``python``](https://www.python.org/) or [``ruby``](https://www.ruby-lang.org/)
@@ -99,7 +99,7 @@ The ``page.template.html`` file in this repository contains an inlined version o
 * 2016-02-07 0.0.2 Removed dependency on jQuery; added optional arguments
 * 2016-02-06 0.0.1 Initial release
 
-## Limitations and Missing Features 
+## Limitations and Missing Features
 
 * The input asciicast JSON file must be in the CWD
 * Tested only on Debian, but it should be OK on other Linux distributions and OS X too
@@ -115,7 +115,7 @@ Contributions are welcome!
 Please follow the usual GitHub
 [fork/new branch/pull-request flow](https://guides.github.com/activities/contributing-to-open-source/).
 
-## Acknowledgments 
+## Acknowledgments
 
 * [Marcin Kulik "sickill"](https://asciinema.org/~sickill) and all the [``asciinema``](https://asciinema.org/) contributors
 * ``asciicast2gif`` has been inspired by [``asciinema2gif``](https://github.com/tav/asciinema2gif) by ``tav``

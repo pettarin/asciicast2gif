@@ -217,7 +217,7 @@ PAGE_TEMPLATE="page.template.html"
 PAGE_PATCHED="page.patched.html"
 PLACEHOLDER="\"demo.json\""
 REPLACEMENT="\"$ASCIICAST_FILE\", { \"fontSize\": \"$FONT_SIZE\", \"speed\": $SPEED, \"theme\": \"$THEME\" }"
-cat "$PAGE_TEMPLATE" | sed -e "s/$PLACEHOLDER/$REPLACEMENT/" > "$PAGE_PATCHED"
+cat "$PAGE_TEMPLATE" | sed -e "s|$PLACEHOLDER|$REPLACEMENT|" > "$PAGE_PATCHED"
 
 # read width and height of the asciicast file
 # TODO parse JSON properly
