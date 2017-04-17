@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/bin/sh
 
 #
-#                 _ _               _   ____       _  __ 
+#                 _ _               _   ____       _  __
 #   __ _ ___  ___(_|_) ___ __ _ ___| |_|___ \ __ _(_)/ _|
-#  / _` / __|/ __| | |/ __/ _` / __| __| __) / _` | | |_ 
+#  / _` / __|/ __| | |/ __/ _` / __| __| __) / _` | | |_
 # | (_| \__ \ (__| | | (_| (_| \__ \ |_ / __/ (_| | |  _|
-#  \__,_|___/\___|_|_|\___\__,_|___/\__|_____\__, |_|_|  
-#                                            |___/       
+#  \__,_|___/\___|_|_|\___\__,_|___/\__|_____\__, |_|_|
+#                                            |___/
 #
-# Version 0.0.2
+# Version 0.0.3
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2016 Alberto Pettarin (alberto@albertopettarin.it)
+# Copyright (c) 2016-2017 Alberto Pettarin (alberto@albertopettarin.it)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -33,26 +33,50 @@
 # SOFTWARE.
 #
 
+
 ### constants ###
 
+# asciicast2gif name
+NAME="asciicast2gif"
+
 # asciicast2gif version
-VERSION="0.0.2"
+VERSION="0.0.3"
 
 # extra parameters to gifsicle
 GIFSICLE_PARAMS="--colors=256 --optimize=3"
 
+# debug
+DEBUG="0" # release
+# DEBUG="1" # debug
 
 
-### parse arguments ###
+### functions ###
 
-if [ "$#" -lt 1 ]
-then
+echodebug() {
+    MSG="$1"
+    if [ "$DEBUG" = "1" ]
+    then
+        echo "[DEBU] $MSG"
+    fi
+}
+
+echoinfo() {
+    MSG="$1"
+    echo "[INFO] $MSG"
+}
+
+echoerro() {
+    MSG="$1"
+    echo "[ERRO] $MSG"
+}
+
+usage() {
     echo ""
     echo "NAME"
-    echo "    asciicast2gif - convert an asciicast (asciinema JSON file) to an animated GIF file"
+    echo "    $NAME - convert an asciicast (asciinema JSON file) to an animated GIF file"
     echo ""
     echo "SYNOPSIS"
-    echo "    ./asciicast2gif ASCIICAST.json [GIF_FILE_NAME] [OPTIONS]"
+    echo "    ./$NAME ASCIICAST.json [GIF_FILE_NAME] [OPTIONS]"
     echo ""
     echo "OPTIONS"
     echo "    --fps=NUM : generate gif with NUM frames per second (default: 10)"
@@ -64,7 +88,7 @@ then
     echo "    --speed=VAL : set player speed to VAL (default: 1)"
     echo "    --tail=NUM : discard last NUM screenshots (default: 0)"
     echo "    --theme=[asciinema|monokai|tango|solarized-dark|solarized-light] : use player theme (default: asciinema)"
-    echo "    --server=[py2|py3|py3.5|ruby|none] : use the given local HTTP server (default: py2)"
+    echo "    --server=[py|py2|py3|py2.7|py3.5|py3.6|ruby|none] : use the given local HTTP server (default: py)"
     echo ""
     echo "EXAMPLES"
     echo "    $ ./asciicast2gif your.json               => generate your.json.gif"
@@ -79,18 +103,269 @@ then
     echo "    $ ./asciicast2gif your.json --port=5000   => use local HTTP server port 5000"
     echo "    $ ./asciicast2gif your.json --theme=tango => set the player theme to tango"
     echo ""
+}
+
+debugmsg() {
+    echodebug "Current directory $START_DIR"
+    echodebug "Input file        $ASCIICAST_FILE"
+    echodebug "Output file       $GIF_FILE_NAME"
+    echodebug "Generate GIF      $GENERATE_GIF"
+    echodebug "Keep tmp files    $KEEP"
+    echodebug "Discard first     $DISCARD_FIRST"
+    echodebug "Discard last      $DISCARD_LAST"
+    echodebug "Frame rate        $FRAME_RATE"
+    echodebug "HTTP server       $SERVER"
+    echodebug "HTTP server port  $PORT"
+    echodebug "Speed             $SPEED"
+    echodebug "Theme             $THEME"
+}
+
+checkcommands() {
+    phantomjs --version > /dev/null 2> /dev/null
+    if [ "$?" != 0 ]
+    then
+        echoerro "You do not have PhantomJS (phantomjs) installed, aborting"
+        exit 1
+    fi
+
+    convert --version > /dev/null 2> /dev/null
+    if [ "$?" != 0 ]
+    then
+        echoerro "You do not have ImageMagick (convert) installed, aborting"
+        exit 1
+    fi
+
+    gifsicle --version > /dev/null 2> /dev/null
+    if [ "$?" != 0 ]
+    then
+        echoerro "You do not have Gifsicle (gifsicle) installed, aborting"
+        exit 1
+    fi
+}
+
+startserver() {
+    if [ "$SERVER" != "none" ]
+    then
+        case $SERVER in
+            py)
+                PYTHON_VERSION=`python -c 'import sys; print(sys.version_info[0])'`
+                if [ "$PYTHON_VERSION" = "2" ]
+                then
+                    echoinfo "Starting Python 2 SimpleHTTPServer on port $PORT (detected)"
+                    python -m SimpleHTTPServer "$PORT" > /dev/null 2> /dev/null &
+                else
+                    echoinfo "Starting Python 3 http.server on port $PORT (detected)"
+                    python -m http.server "$PORT" > /dev/null 2> /dev/null &
+                fi
+                ;;
+            py2)
+                echoinfo "Starting Python 2 SimpleHTTPServer on port $PORT"
+                python2 -m SimpleHTTPServer "$PORT" > /dev/null 2> /dev/null &
+                ;;
+            py2.7)
+                echoinfo "Starting Python 2.7 SimpleHTTPServer on port $PORT"
+                python2.7 -m SimpleHTTPServer "$PORT" > /dev/null 2> /dev/null &
+                ;;
+            py3)
+                echoinfo "Starting Python 3 http.server on port $PORT"
+                python3 -m http.server "$PORT" > /dev/null 2> /dev/null &
+                ;;
+            py3.5)
+                echoinfo "Starting Python 3.5 http.server on port $PORT"
+                python3.5 -m http.server "$PORT" > /dev/null 2> /dev/null &
+                ;;
+            py3.6)
+                echoinfo "Starting Python 3.6 http.server on port $PORT"
+                python3.6 -m http.server "$PORT" > /dev/null 2> /dev/null &
+                ;;
+            ruby)
+                echoinfo "Starting Ruby httpd on port $PORT"
+                ruby -run -e httpd . -p "$PORT" > /dev/null 2> /dev/null &
+                ;;
+        esac
+        SERVER_PID=$!
+        echoinfo "Local HTTP server running with PID $SERVER_PID"
+        sleep 1
+        if ! ps -p $SERVER_PID > /dev/null
+        then
+            echoerro "Unable to run a local HTTP server via python or ruby."
+            echoerro "Please start a local HTTP server and run asciicast2gif with the '--server=none' option."
+            echoerro "Otherwise, please install python or ruby on your machine."
+            exit 1
+        fi
+    fi
+}
+
+killserver() {
+    if [ "$SERVER" != "none" ]
+    then
+        echoinfo "Terminating local HTTP server"
+        kill $SERVER_PID
+        wait $SERVER_PID 2> /dev/null
+    fi
+}
+
+createtmpdir() {
+    TMP_DIR="$(mktemp -d -t asciicast2gif.XXXXXXXX)"
+    echoinfo "Saving screenshots into $TMP_DIR"
+}
+
+removetmpdir() {
+    if [ "$KEEP" = "1" ]
+    then
+        echoinfo "Option '--keep' specified: not removing $TMP_DIR"
+    else
+        rm -rf $TMP_DIR
+        echodebug "Removed temporary directory $TMP_DIR"
+    fi
+}
+
+createpatched() {
+    PAGE_TEMPLATE="page.template.html"
+    PAGE_PATCHED="page.patched.html"
+    PLACEHOLDER="\"demo.json\""
+    REPLACEMENT="\"$ASCIICAST_FILE\", { \"fontSize\": \"$FONT_SIZE\", \"speed\": $SPEED, \"theme\": \"$THEME\" }"
+    cat "$PAGE_TEMPLATE" | sed -e "s|$PLACEHOLDER|$REPLACEMENT|" > "$PAGE_PATCHED"
+    echodebug "Created patched HTML file $PAGE_PATCHED"
+}
+
+removepatched() {
+    rm -f $PAGE_PATCHED
+    echodebug "Removed patched HTML file $PAGE_PATCHED"
+}
+
+runphantomjs() {
+    # read width and height of the asciicast file
+    # TODO parse JSON properly
+    WIDTH=`cat "$ASCIICAST_FILE" | tr "," "\n" | grep "width"  | head -n1 | cut -d ":" -f 2 | tr -d " ,"`
+    HEIGHT=`cat "$ASCIICAST_FILE" | tr "," "\n" | grep "height" | head -n1 | cut -d ":" -f 2 | tr -d " ,"`
+    #
+    # NOTE this depends on asciinema-player CSS/JS
+    # small  =>  7x 16x
+    # medium => 11x 24x
+    # big    => 14x 32x
+    #
+    case $FONT_SIZE in
+        small)
+        WIDTH_MULT=7
+        HEIGHT_MULT=16
+        ;;
+        medium)
+        WIDTH_MULT=11
+        HEIGHT_MULT=24
+        ;;
+        big)
+        WIDTH_MULT=14
+        HEIGHT_MULT=32
+        ;;
+    esac
+    WIDTH_PX=`echo "$WIDTH * $WIDTH_MULT" | bc`
+    HEIGHT_PX=`echo "$HEIGHT * $HEIGHT_MULT" | bc`
+
+    # run phantomjs to take screenshots while asciinema-player runs
+    echodebug "Running PhantomJS ..."
+    phantomjs screenshot.js "http://localhost:$PORT/$PAGE_PATCHED" "$WIDTH_PX" "$HEIGHT_PX" "$TMP_DIR" "$FRAME_RATE"
+    PHANTOMJS_CODE="$?"
+    echodebug "Running PhantomJS ... done"
+}
+
+selectframes() {
+    echoinfo "Selecting frames"
+
+    # cd into tmp directory
+    cd "$TMP_DIR"
+
+    # remove the last DISCARD_LAST snapshots
+    echodebug "Removing last $DISCARD_LAST snapshots"
+    LAST_FILES=`ls | tail -n $DISCARD_LAST`
+    for CURRENT_FILE in $LAST_FILES
+    do
+        echodebug "Removing file $CURRENT_FILE"
+        rm "$CURRENT_FILE"
+    done
+
+    # remove the first screenshots, as they have a wrong size
+    # TODO improve screenshot.js to avoid this
+    LAST_FILE=`ls | tail -n 1`
+    LAST_FILE_SIZE=`file $LAST_FILE | cut -d "," -f 2 | tr -d " "`
+    for CURRENT_FILE in *.png
+    do
+        CURRENT_FILE_SIZE=`file $CURRENT_FILE | cut -d "," -f 2 | tr -d " "`
+        if [ "$CURRENT_FILE_SIZE" != "$LAST_FILE_SIZE" ]
+        then
+            echodebug "Removing file $CURRENT_FILE (has size $CURRENT_FILE_SIZE instead of $LAST_FILE_SIZE)"
+            rm "$CURRENT_FILE"
+        fi
+    done
+
+    # remove the first DISCARD_FIRST snapshots
+    echodebug "Removing first $DISCARD_FIRST snapshots"
+    FIRST_FILES=`ls | head -n $DISCARD_FIRST`
+    for CURRENT_FILE in $FIRST_FILES
+    do
+        echodebug "Removing file $CURRENT_FILE"
+        rm "$CURRENT_FILE"
+    done
+
+    # cd back to original directory
+    cd $START_DIR
+}
+
+generategif() {
+    if [ "$GENERATE_GIF" = "1" ]
+    then
+        cd $TMP_DIR
+        echoinfo "Generating GIF"
+        convert -loop 0 *.png gif:- | gifsicle --delay $GIFSICLE_DELAY $GIFSICLE_PARAMS > "$GIF_FILE" 2> /dev/null
+        echoinfo "Created $GIF_FILE"
+        cd $START_DIR
+    else
+        echoinfo "Option '--nogif' specified: not generating GIF file"
+    fi
+}
+
+
+### main script ###
+
+# save current directory
+START_DIR=`pwd`
+
+# check that all the required commands are installed
+checkcommands
+
+# print usage and exit
+if [ "$#" -lt 1 ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
+then
+    usage
     exit 2
 fi
 
-ASCIICAST_FILE="$1"
+# print version number
+if [ "$1" = "--version" ]
+then
+    echo "$VERSION"
+    exit 0
+fi
 
+# if the input file cannot be read, error and exit
+ASCIICAST_FILE="$1"
+if [ ! -e "$ASCIICAST_FILE" ]
+then
+    echoerro "File $ASCIICAST_FILE does not exit"
+    exit 1
+fi
+
+# default output file name...
 GIF_FILE_NAME="$ASCIICAST_FILE"".gif"
+# ... unless it has been given explicitly
 if [ "$#" -ge 2 ]
 then
-    if [[ "$2" != --* ]]
-    then
-        GIF_FILE_NAME="$2"
-    fi
+    case "$2" in
+        "--"*)
+            ;;
+        *)
+            GIF_FILE_NAME="$2" ;;
+    esac
 fi
 GIF_FILE=$(cd "$(dirname "$GIF_FILE_NAME")"; pwd)/$(basename "$GIF_FILE_NAME")
 
@@ -102,7 +377,7 @@ FRAME_RATE=10       # frame rate (screenshots/s)
 GENERATE_GIF="1"    # generate gif
 KEEP="0"            # keep (1) or delete (0) temporary directory
 PORT=8000           # run simple HTTP server on this port
-SERVER="py2"        # server name
+SERVER="py"         # server name
 SPEED="1"           # player speed
 THEME="asciinema"   # player theme
 
@@ -153,181 +428,46 @@ do
     esac
 done
 
-#echo "IF $ASCIICAST_FILE"
-#echo "OF $GIF_FILE_NAME"
-#echo "GG $GENERATE_GIF"
-#echo "KE $KEEP"
-#echo "DF $DISCARD_FIRST"
-#echo "DL $DISCARD_LAST"
-#echo "FR $FRAME_RATE"
-#echo "PO $PORT"
-#echo "SE $SERVER"
-#echo "SP $SPEED"
-#echo "TH $THEME"
-
+# compute gifsicle delay
 GIFSICLE_DELAY=`echo "100 / $FRAME_RATE" | bc`
 
-### run ###
 
-START_DIR=`pwd`
+### actual work ###
 
-if [ ! -e "$ASCIICAST_FILE" ]
-then
-    echo "[ERRO] File $ASCIICAST_FILE does not exit"
-    exit 1
-fi
+# print debug message
+debugmsg
 
-if [ "$SERVER" != "none" ]
-then
-    if [ "$SERVER" == "py2" ]
-    then
-        echo "[INFO] Starting Python 2 SimpleHTTPServer on port $PORT"
-        python -m SimpleHTTPServer "$PORT" > /dev/null 2> /dev/null &
-    elif [ "$SERVER" == "py3" ]
-    then
-        echo "[INFO] Starting Python 3 http.server on port $PORT"
-        python -m http.server "$PORT" > /dev/null 2> /dev/null &
-    elif [ "$SERVER" == "py3.5" ]
-    then
-        echo "[INFO] Starting Python 3.5 http.server on port $PORT"
-        python3.5 -m http.server "$PORT" > /dev/null 2> /dev/null &
-    elif [ "$SERVER" == "ruby" ]
-    then
-        echo "[INFO] Starting Ruby httpd on port $PORT"
-        ruby -run -e httpd . -p "$PORT" > /dev/null 2> /dev/null &
-    fi
-    SERVER_PID=$!
-    sleep 1
-    if ! ps -p $SERVER_PID > /dev/null
-    then
-        echo "[ERRO] Unable to run a simple HTTP server"
-        echo "[ERRO] asciicast2gif needs a local HTTP server running on port $PORT"
-        echo "[ERRO] If you have a local HTTP server, start it and run asciicast2gif with the 'none' option"
-        echo "[ERRO] Otherwise, please install python or ruby"
-        exit 1
-    fi
-fi
+# start local server (if needed)
+startserver
 
 # create temporary directory
-TMP_DIR="$(mktemp -d -t asciicast2gif.XXXXXXXX)"
-echo "[INFO] Temporary directory is $TMP_DIR"
+createtmpdir
 
-# create page.patched.html
-PAGE_TEMPLATE="page.template.html"
-PAGE_PATCHED="page.patched.html"
-PLACEHOLDER="\"demo.json\""
-REPLACEMENT="\"$ASCIICAST_FILE\", { \"fontSize\": \"$FONT_SIZE\", \"speed\": $SPEED, \"theme\": \"$THEME\" }"
-cat "$PAGE_TEMPLATE" | sed -e "s|$PLACEHOLDER|$REPLACEMENT|" > "$PAGE_PATCHED"
+# create patched HTML page
+createpatched
 
-# read width and height of the asciicast file
-# TODO parse JSON properly
-WIDTH=`cat "$ASCIICAST_FILE" | tr "," "\n" | grep "width"  | head -n1 | cut -d ":" -f 2 | tr -d " ,"`
-HEIGHT=`cat "$ASCIICAST_FILE" | tr "," "\n" | grep "height" | head -n1 | cut -d ":" -f 2 | tr -d " ,"`
-#
-# NOTE this depends on asciinema-player CSS/JS
-# small  =>  7x 16x
-# medium => 11x 24x
-# big    => 14x 32x
-#
-case $FONT_SIZE in
-    small)
-    WIDTH_MULT=7
-    HEIGHT_MULT=16
-    ;;
-    medium)
-    WIDTH_MULT=11
-    HEIGHT_MULT=24
-    ;;
-    big)
-    WIDTH_MULT=14
-    HEIGHT_MULT=32
-    ;;
-esac
-WIDTH_PX=`echo "$WIDTH * $WIDTH_MULT" | bc`
-HEIGHT_PX=`echo "$HEIGHT * $HEIGHT_MULT" | bc`
+# run PhantomJS
+runphantomjs
 
-# run phantomjs to take screenshots
-# while asciinema-player runs
-phantomjs screenshot.js "http://localhost:$PORT/$PAGE_PATCHED" "$WIDTH_PX" "$HEIGHT_PX" "$TMP_DIR" "$FRAME_RATE"
-if [ "$?" != 0 ]
+# kill server and remove patched HTML file
+killserver
+removepatched
+
+# check PhantomJS return code
+if [ "$PHANTOMJS_CODE" != 0 ]
 then
-    echo "[ERRO] Removing $TMP_DIR"
-    rm -rf $TMP_DIR
-    if [ "$SERVER" != "none" ]
-    then
-        echo "[ERRO] Terminating simple HTTP server"
-        kill $SERVER_PID
-        wait $SERVER_PID 2> /dev/null
-    fi
-    rm $PAGE_PATCHED
+    echoerro "PhantomJS returned error code $PHANTOMJS_CODE, aborting"
+    removetmpdir
     exit 1
 fi
 
-if [ "$SERVER" != "none" ]
-then
-    echo "[INFO] Terminating simple HTTP server"
-    kill $SERVER_PID
-    wait $SERVER_PID 2> /dev/null
-fi
-rm $PAGE_PATCHED
+# select frames, discarding unwanted ones
+selectframes
 
-echo "[INFO] Generating GIF..."
-cd "$TMP_DIR"
-
-# remove the last DISCARD_LAST snapshots
-LAST_FILES=`ls | tail -n $DISCARD_LAST`
-for CURRENT_FILE in $LAST_FILES
-do
-    #echo "[INFO] Removing file $CURRENT_FILE"
-    rm "$CURRENT_FILE"
-done
-
-# remove the first screenshots, as they have a wrong size
-# TODO improve screenshot.js to avoid this
-LAST_FILE=`ls | tail -n 1`
-LAST_FILE_SIZE=`file $LAST_FILE | cut -d "," -f 2 | tr -d " "`
-for CURRENT_FILE in *.png
-do
-    CURRENT_FILE_SIZE=`file $CURRENT_FILE | cut -d "," -f 2 | tr -d " "`
-    if [ "$CURRENT_FILE_SIZE" != "$LAST_FILE_SIZE" ]
-    then
-        #echo "[INFO] Removing file $CURRENT_FILE (has size $CURRENT_FILE_SIZE instead of $LAST_FILE_SIZE)"
-        rm "$CURRENT_FILE"
-    fi
-done
-
-# remove the first DISCARD_FIRST snapshots
-FIRST_FILES=`ls | head -n $DISCARD_FIRST`
-for CURRENT_FILE in $FIRST_FILES
-do
-    #echo "[INFO] Removing file $CURRENT_FILE"
-    rm "$CURRENT_FILE"
-done
-
-# generate GIF
-if [ "$GENERATE_GIF" == "1" ]
-then
-    convert -loop 0 *.png gif:- | gifsicle --delay $GIFSICLE_DELAY $GIFSICLE_PARAMS > "$GIF_FILE" 2> /dev/null
-else
-    echo "[INFO] Option '--nogif' specified: not generating GIF file"
-fi
-
-cd $START_DIR
+# generate gif, if required
+generategif
 
 # delete temporary directory
-if [ "$KEEP" == "0" ]
-then
-    #echo "[INFO] Removing $TMP_DIR"
-    rm -rf $TMP_DIR
-else
-    echo "[INFO] Option '--keep' specified: not removing $TMP_DIR"
-fi
+removetmpdir
 
-if [ "$GENERATE_GIF" == "1" ]
-then
-    echo "[INFO] Created $GIF_FILE"
-fi
 exit 0
-
-
-

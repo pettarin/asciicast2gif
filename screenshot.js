@@ -1,17 +1,17 @@
 /*
 
-                _ _               _   ____       _  __ 
+                _ _               _   ____       _  __
   __ _ ___  ___(_|_) ___ __ _ ___| |_|___ \ __ _(_)/ _|
- / _` / __|/ __| | |/ __/ _` / __| __| __) / _` | | |_ 
+ / _` / __|/ __| | |/ __/ _` / __| __| __) / _` | | |_
 | (_| \__ \ (__| | | (_| (_| \__ \ |_ / __/ (_| | |  _|
- \__,_|___/\___|_|_|\___\__,_|___/\__|_____\__, |_|_|  
-                                           |___/       
+ \__,_|___/\___|_|_|\___\__,_|___/\__|_____\__, |_|_|
+                                           |___/
 
-Version 0.0.2
+Version 0.0.3
 
 The MIT License (MIT)
 
-Copyright (c) 2016 Alberto Pettarin (alberto@albertopettarin.it)
+Copyright (c) 2016-2017 Alberto Pettarin (alberto@albertopettarin.it)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
