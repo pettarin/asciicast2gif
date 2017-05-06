@@ -9,6 +9,16 @@
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
 
 
+## News
+
+2017-05-06: [Marcin Kulik](https://asciinema.org/~sickill), the developer of ``asciinema``,
+is working on a similar tool,
+dubbed [``a2gif``](https://github.com/asciinema/a2gif),
+which offers improvements over ``asciicast2gif`` and
+it is likely to be better supported in the future.
+Thus, you might want to use [``a2gif``](https://github.com/asciinema/a2gif) instead of ``asciicast2gif``.
+
+
 ## Usage
 
 ![Usage asciicast GIF](gifs/usage.gif)
