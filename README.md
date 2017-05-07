@@ -13,10 +13,13 @@
 
 2017-05-06: [Marcin Kulik](https://asciinema.org/~sickill), the developer of ``asciinema``,
 is working on a similar tool,
-dubbed [``a2gif``](https://github.com/asciinema/a2gif),
-which offers improvements over ``asciicast2gif`` and
-it is likely to be better supported in the future.
-Thus, you might want to use [``a2gif``](https://github.com/asciinema/a2gif) instead of ``asciicast2gif``.
+also named [``asciicast2gif``](https://github.com/asciinema/asciicast2gif)
+(originally named ``a2gif``),
+which offers improvements over my tool
+and which is likely to be better supported in the future.
+Thus, you might want to use
+[Marcin's ``asciicast2gif``](https://github.com/asciinema/asciicast2gif)
+instead of mine.
 
 
 ## Usage
